@@ -51,12 +51,12 @@ int main (int argc, char* argv[]) {
     return -1;
   }
   
-  int fuctionID  = atoi(argv[1]);
-  int lowerBound = atoi(argv[2]); // This is a
-  int upperBound = atoi(argv[3]); // This is b
-  int n          = atoi(argv[4]);
-  int intensity  = atoi(argv[5]);
-  int nbthreads  = atoi(argv[6]);
+  int fuctionID    = atoi(argv[1]);
+  float lowerBound = atof(argv[2]); // This is a
+  float upperBound = atof(argv[3]); // This is b
+  int n            = atoi(argv[4]);
+  int intensity    = atoi(argv[5]);
+  int nbthreads    = atoi(argv[6]);
   
   auto startTime = system_clock::now();
   
@@ -67,14 +67,22 @@ int main (int argc, char* argv[]) {
   
   SeqLoop sl;
   
-  sl.parfor(0, n, 1, {
-      [&](int i) -> void{
-	      float x_value = lowerBound + (i + 0.5f) * start;
-        temp += get_function_value(fuctionID, x_value, intensity);
-	    }
+  sl.set_thread_count(nbthreads);
+  
+  sl.parfor_parallel<float>(0, n, 1,
+    [&](float& tls) -> void{ // Before
+      tls = 0;
+    },
+    [&](int i, float& tls) -> void{
+      float x_value = lowerBound + (i + 0.5f) * start;
+      tls += get_function_value(fuctionID, x_value, intensity);
+    },
+    [&](float& tls) -> void{ // After
+      temp += tls;
     }
   );
   result = start * temp;
+  
   std::cout << result;
   
   auto stopTime = system_clock::now();
